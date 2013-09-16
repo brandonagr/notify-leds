@@ -68,8 +68,15 @@ func main() {
 
 // Test generate of drawables
 func CreateDrawables(newDrawables chan<- Drawable) {
+
+	var count int = 0
 	for {
 		time.Sleep(250 * time.Millisecond)
 		newDrawables <- NewParticle(0, 32, 3)
+
+		count++
+		if count%10 == 0 {
+			newDrawables <- NewFlash()
+		}
 	}
 }
