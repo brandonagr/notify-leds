@@ -1,0 +1,124 @@
+package led_strip
+
+import (
+	"container/list"
+)
+
+// Defines all of the information
+type LedStrip struct {
+
+	// Size of the field, from 0 to width exclusive
+	width int
+
+	// All of the drawable items, stored in increasing ZIndex order
+	drawables *list.List
+
+	// Buffer used to render the field
+	renderBuffer []RGBA
+}
+
+// Initialized a new field
+func NewLedStrip(width int) *LedStrip {
+
+	return &LedStrip{
+		width:        width,
+		drawables:    list.New(),
+		renderBuffer: make([]RGBA, width),
+	}
+}
+
+// Adds a drawable to the field
+func (field *LedStrip) Add(addDrawable Drawable) {
+
+	curElement := field.drawables.Front()
+
+	if curElement == nil {
+		field.drawables.PushFront(addDrawable)
+		return
+	}
+
+	for ; curElement != nil; curElement = curElement.Next() {
+
+		curDrawable := curElement.Value.(Drawable)
+
+		if addDrawable.ZIndex() <= curDrawable.ZIndex() {
+			field.drawables.InsertBefore(addDrawable, curElement)
+			return
+		}
+	}
+
+	// got here so it wasn't less than any
+	field.drawables.PushBack(addDrawable)
+}
+
+// Determines the color at the given position
+func (field *LedStrip) ColorAt(position float64) RGBA {
+
+	color := RGBA{0, 0, 0, 255}
+
+	for curElement := field.drawables.Front(); curElement != nil; curElement = curElement.Next() {
+
+		drawable := curElement.Value.(Drawable)
+
+		color = drawable.ColorAt(position, color)
+	}
+
+	return color
+}
+
+// Animate all Drawables
+func (field *LedStrip) Animate(dt float64) {
+
+	for curElement := field.drawables.Front(); curElement != nil; {
+
+		drawable := curElement.Value.(Drawable)
+
+		if !drawable.Animate(dt) {
+			nextElement := curElement.Next()
+			field.drawables.Remove(curElement)
+			curElement = nextElement
+		} else {
+			curElement = curElement.Next()
+		}
+	}
+}
+
+// Render each integer position and pass that to the Display
+func (field *LedStrip) RenderTo(display Display) {
+
+	for ledIndex := 0; ledIndex < field.width; ledIndex++ {
+		field.renderBuffer[ledIndex] = field.ColorAt(float64(ledIndex))
+	}
+	display.Render(field.renderBuffer)
+}
+
+// Returns true if the field of drawables is valid
+func (field *LedStrip) IsValid() bool {
+
+	var prevDrawable Drawable = nil
+
+	for curElement := field.drawables.Front(); curElement != nil; curElement = curElement.Next() {
+
+		curDrawable := curElement.Value.(Drawable)
+
+		if prevDrawable != nil {
+			if prevDrawable.ZIndex() > curDrawable.ZIndex() {
+				return false
+			}
+		}
+
+		prevDrawable = curDrawable
+	}
+
+	return true
+}
+
+// Return number of drawables in the field
+func (field *LedStrip) DrawableLen() int {
+	return field.drawables.Len()
+}
+
+// Width of the field
+func (field *LedStrip) Width() int {
+	return field.width
+}
