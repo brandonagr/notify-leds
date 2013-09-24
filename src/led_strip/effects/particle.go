@@ -8,6 +8,9 @@ import (
 // Particle that will be drawn on the screen
 type Particle struct {
 
+	// color of the particle
+	color RGBA
+
 	// current position of the ball
 	position float64
 
@@ -30,8 +33,9 @@ type Particle struct {
 var _ Drawable = &Particle{}
 
 // Construct a Particle
-func NewParticle(position, velocity, size float64) *Particle {
+func NewParticle(position, velocity, size float64, color RGBA) *Particle {
 	return &Particle{
+		color:    color,
 		position: position,
 		velocity: velocity,
 		size:     size,
@@ -46,8 +50,9 @@ func (this *Particle) ColorAt(position float64, baseColor RGBA) (color RGBA) {
 	distance := math.Abs(position - this.position)
 
 	if distance < this.size {
-		color = RGBA{255, 255, 255, uint8((this.size - distance) * 255.0)}
-		color = color.BlendWith(baseColor)
+		fadedColor := this.color
+		fadedColor.A = uint8((this.size - distance) * 255.0)
+		color = fadedColor.BlendWith(baseColor)
 	} else {
 		color = baseColor
 	}

@@ -2,30 +2,22 @@ package main
 
 import (
 	"flag"
+	"github.com/gmallard/stompngo"
 	. "led_strip"
 	. "led_strip/effects"
 	"log"
 	_ "log"
 	_ "math"
+	"net"
 	"runtime"
+	"strings"
 	"time"
 )
 
-//point that grows and shrinks, moving in one direction with a random velocity
-//color and size should depend on log level, need some random differentiator between the same log level getting received constantly
-//should color depend on topic name? and size depend on log level?
-
-//Entire screen should blink on an off color, with rate starting out at 30 hz and then growing slower over time until the timeout
-//or should it alternate color? should transparency fade over time?
-
-//trace - gray
-//debug - blue
-//info - green
-//warn - orange
-//error - red / yellow
-//fatal - purple / white
-
+// Command line flags
 var webDisplay = flag.Bool("webdisplay", false, "use webhost on localhost:8080 for the display")
+var brokerHost = flag.String("brokerHost", "localhost", "Broker host to connect to")
+var brokerPort = flag.String("brokerPort", "61613", "Broker port to connect to")
 
 // Application entry point
 func main() {
@@ -36,15 +28,25 @@ func main() {
 
 	log.Print("MinFrameTime is ", Settings.MinFrameTime)
 
+	// channel that will allow background goroutine to send new Drawable objects to the render thread
+	newDrawables := make(chan Drawable, 100)
+
 	var display Display
+
 	if *webDisplay || runtime.GOOS == "windows" {
 		display = NewWebDisplay(Settings)
+		go GenerateDrawablesTimer(newDrawables)
 	} else {
 		display = NewLedDisplay(Settings)
+		go GenerateDrawablesTimer(newDrawables)
 	}
 
-	newDrawables := make(chan Drawable, 100)
-	go CreateDrawables(newDrawables)
+	if runtime.GOOS == "windows" {
+		//go GenerateDrawablesTimer(newDrawables)
+		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
+	} else {
+		go GenerateDrawablesTimer(newDrawables)
+	}
 
 	strip := NewLedStrip(Settings.LedCount)
 	curTime := time.Now()
@@ -67,16 +69,107 @@ func main() {
 }
 
 // Test generate of drawables
-func CreateDrawables(newDrawables chan<- Drawable) {
+func GenerateDrawablesTimer(newDrawables chan<- Drawable) {
 
 	var count int = 0
 	for {
 		time.Sleep(250 * time.Millisecond)
-		newDrawables <- NewParticle(0, 32, 3)
+		newDrawables <- NewParticle(0, 32, 3, RGBA{255, 255, 255, 0})
 
 		count++
 		if count%10 == 0 {
-			newDrawables <- NewFlash()
+			newDrawables <- NewFlash(2, 10, 0.5, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 0, 0}})
 		}
 	}
+}
+
+// Type that is received from a message
+type LogMessage struct {
+	ApplicationName string
+	LogType         string
+	EntryDate       string
+	Description     string
+}
+
+//point that grows and shrinks, moving in one direction with a random velocity
+//color and size should depend on log level, need some random differentiator between the same log level getting received constantly
+//should color depend on topic name? and size depend on log level?
+
+//Entire screen should blink on an off color, with rate starting out at 30 hz and then growing slower over time until the timeout
+//or should it alternate color? should transparency fade over time?
+
+//trace - gray
+//debug - blue
+//info - green
+//warn - orange
+//error - red / yellow
+//fatal - purple / white
+
+// Generate drawables from the broker
+// would it be better to have this return a channel of LogMessage, and chain channels together to form pipeline to generate Drawable? Only if want to add another stage to the filter in the future
+func GenerateDrawablesLogs(host, port string, newDrawables <-chan Drawable) {
+	log.Println("Connecting to ", host, ":", port, " ...")
+	tcpConnection, err := net.Dial("tcp", net.JoinHostPort(host, port))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	headers := stompngo.Headers{"accept-version", "1.1", "host", host}
+	connection, err := stompngo.Connect(tcpConnection, headers)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println("Stomp connect complete ...", connection.Protocol())
+
+	u := stompngo.Uuid()
+	s := stompngo.Headers{"destination", "/topic/*", "id", u}
+	r, err := connection.Subscribe(s)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for message := range r {
+		if message.Error != nil {
+			log.Fatalln(message.Error)
+		}
+		log.Println(strings.Join(message.Message.Headers, ","))
+		log.Println(string(message.Message.Body))
+	}
+}
+
+// Convert LogMessage to Drawable
+func CreateDrawableFromLog(message LogMessage) Drawable {
+	logType := strings.ToLower(message.LogType)
+	particleColor := RGBA{}
+
+	switch logType {
+	case "trace":
+		particleColor = RGBA{128, 128, 128, 255}
+		break
+	case "debug":
+		particleColor = RGBA{0, 0, 255, 255}
+		break
+	case "info", "informational":
+		particleColor = RGBA{0, 255, 0, 255}
+		break
+	case "warn":
+		particleColor = RGBA{255, 128, 0, 255}
+		break
+	case "error":
+		return NewFlash(5, 15, 0.5, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{255, 255, 0, 128}})
+		break
+	case "fatal":
+		return NewFlash(30, 8, 1, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 0}})
+		break
+	default:
+		log.Fatalln("Unexpected logType of ", logType)
+		break
+	}
+
+	// need to generate a random position
+	// random position in first 2/3 of strip
+	// velocity based on size of message
+	// size based on size of message
+	// color based on LogType
+	return NewParticle(0, 2, 2, particleColor) //position, velocity, size float64)
+
 }

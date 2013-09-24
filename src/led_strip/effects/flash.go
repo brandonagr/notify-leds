@@ -27,12 +27,12 @@ type Flash struct {
 var _ Drawable = &Flash{}
 
 // Construct a Flash
-func NewFlash() *Flash {
+func NewFlash(lifeMax, frequencyBegin, frequencyEnd float64, colors [2]RGBA) *Flash {
 	return &Flash{
-		lifeMax:        2,
-		frequencyBegin: 10,
-		frequencyEnd:   0.5,
-		colors:         [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 0, 0}},
+		lifeMax:        lifeMax,
+		frequencyBegin: frequencyBegin,
+		frequencyEnd:   frequencyEnd,
+		colors:         colors,
 	}
 }
 
