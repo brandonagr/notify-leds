@@ -35,17 +35,16 @@ func main() {
 
 	if *webDisplay || runtime.GOOS == "windows" {
 		display = NewWebDisplay(Settings)
-		go GenerateDrawablesTimer(newDrawables)
 	} else {
 		display = NewLedDisplay(Settings)
-		go GenerateDrawablesTimer(newDrawables)
 	}
 
 	if runtime.GOOS == "windows" {
 		//go GenerateDrawablesTimer(newDrawables)
 		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	} else {
-		go GenerateDrawablesTimer(newDrawables)
+		//go GenerateDrawablesTimer(newDrawables)
+		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	}
 
 	strip := NewLedStrip(Settings.LedCount)
@@ -73,12 +72,12 @@ func GenerateDrawablesTimer(newDrawables chan<- Drawable) {
 
 	var count int = 0
 	for {
-		time.Sleep(250 * time.Millisecond)
-		newDrawables <- NewParticle(0, 32, 3, RGBA{255, 255, 255, 0})
+		time.Sleep(500 * time.Millisecond)
+		newDrawables <- NewParticle(0, 32, 1, RGBA{128, 128, 0, 255})
 
 		count++
-		if count%10 == 0 {
-			newDrawables <- NewFlash(2, 10, 0.5, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 0, 0}})
+		if count%20 == 0 {
+			newDrawables <- NewFlash(5, 0.5, 0.5, [2]RGBA{RGBA{255, 0, 0, 128}, RGBA{255, 255, 255, 255}})
 		}
 	}
 }
