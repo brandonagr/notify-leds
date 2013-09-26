@@ -161,10 +161,10 @@ func CreateDrawableFromLog(message LogMessage) Drawable {
 		particleColor = RGBA{255, 128, 0, 255}
 		break
 	case "error":
-		return NewFlash(5, 15, 0.5, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{255, 255, 0, 128}})
+		return NewFlash(10, 0.25, 0.25, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
 		break
 	case "fatal":
-		return NewFlash(30, 8, 1, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 0}})
+		return NewFlash(20, 0.5, 0.5, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}})
 		break
 	default:
 		log.Fatalln("Unexpected logType of ", logType)
