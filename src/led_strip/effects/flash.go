@@ -40,7 +40,7 @@ func (this *Flash) ColorAt(position float64, baseColor RGBA) (color RGBA) {
 	lifePercentage := (this.lifeMax - this.lifeSoFar) / this.lifeMax
 	frequency := (this.frequencyBegin-this.frequencyEnd)*lifePercentage + this.frequencyBegin
 
-	colorIndex := int(frequency/this.lifeSoFar) % 2
+	colorIndex := int(this.lifeSoFar/frequency) % 2
 	color = this.colors[colorIndex]
 	if color.A > 0 {
 		color.A = uint8(lifePercentage * 255.0)

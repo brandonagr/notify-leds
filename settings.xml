@@ -1,13 +1,6 @@
-
 <SettingsData>
-	<MaxFPS>60</MaxFPS>
+	<MaxFPS>100</MaxFPS>
 	<LedCount>64</LedCount>
 	<SpiFilePath>/dev/spidev0.0</SpiFilePath>
 	<SpiBusSpeedHz>1000000</SpiBusSpeedHz>
-	<LeftButtonPath>/sys/class/gpio/gpio22/value</LeftButtonPath>
-	<LeftButtonGpioPort>22</LeftButtonGpioPort>
-	<RightButtonPath>/sys/class/gpio/gpio27/value</RightButtonPath>
-	<RightButtonGpioPort>27</RightButtonGpioPort>
-	<BounceVelocityIncrease>1.035</BounceVelocityIncrease>
-	<LifeInSeconds>4</LifeInSeconds>
 </SettingsData>
