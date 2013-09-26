@@ -24,10 +24,8 @@ type Flash struct {
 	colors [2]RGBA
 }
 
-var _ Drawable = &Flash{}
-
 // Construct a Flash
-func NewFlash(lifeMax, frequencyBegin, frequencyEnd float64, colors [2]RGBA) *Flash {
+func NewFlash(lifeMax, frequencyBegin, frequencyEnd float64, colors [2]RGBA) Drawable {
 	return &Flash{
 		lifeMax:        lifeMax,
 		frequencyBegin: frequencyBegin,

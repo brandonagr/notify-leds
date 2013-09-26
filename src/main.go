@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"github.com/gmallard/stompngo"
 	. "led_strip"
@@ -35,17 +36,15 @@ func main() {
 
 	if *webDisplay || runtime.GOOS == "windows" {
 		display = NewWebDisplay(Settings)
-		go GenerateDrawablesTimer(newDrawables)
 	} else {
 		display = NewLedDisplay(Settings)
-		go GenerateDrawablesTimer(newDrawables)
 	}
 
 	if runtime.GOOS == "windows" {
 		//go GenerateDrawablesTimer(newDrawables)
 		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	} else {
-		go GenerateDrawablesTimer(newDrawables)
+		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	}
 
 	strip := NewLedStrip(Settings.LedCount)
@@ -107,7 +106,7 @@ type LogMessage struct {
 
 // Generate drawables from the broker
 // would it be better to have this return a channel of LogMessage, and chain channels together to form pipeline to generate Drawable? Only if want to add another stage to the filter in the future
-func GenerateDrawablesLogs(host, port string, newDrawables <-chan Drawable) {
+func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 	log.Println("Connecting to ", host, ":", port, " ...")
 	tcpConnection, err := net.Dial("tcp", net.JoinHostPort(host, port))
 	if err != nil {
@@ -131,8 +130,15 @@ func GenerateDrawablesLogs(host, port string, newDrawables <-chan Drawable) {
 		if message.Error != nil {
 			log.Fatalln(message.Error)
 		}
-		log.Println(strings.Join(message.Message.Headers, ","))
-		log.Println(string(message.Message.Body))
+
+		log.Println("Received message", strings.Join(message.Message.Headers, ","))
+
+		logMessage := LogMessage{}
+		if err = xml.Unmarshal(message.Message.Body, &logMessage); err != nil {
+			log.Printf("Failed to unmarshal", err, message.Message.Body)
+		} else {
+			newDrawables <- CreateDrawableFromLog(logMessage)
+		}
 	}
 }
 
@@ -170,6 +176,5 @@ func CreateDrawableFromLog(message LogMessage) Drawable {
 	// velocity based on size of message
 	// size based on size of message
 	// color based on LogType
-	return NewParticle(0, 2, 2, particleColor) //position, velocity, size float64)
-
+	return NewFadingParticle(0, 32, 2, particleColor) //position, velocity, size float64)
 }
