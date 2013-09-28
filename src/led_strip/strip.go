@@ -7,17 +7,17 @@ import (
 // Defines all of the information
 type LedStrip struct {
 
-	// Size of the field, from 0 to width exclusive
+	// Size of the strip, from 0 to width exclusive
 	width int
 
 	// All of the drawable items, stored in increasing ZIndex order
 	drawables *list.List
 
-	// Buffer used to render the field
+	// Buffer used to render the strip
 	renderBuffer []RGBA
 }
 
-// Initialized a new field
+// Initialized a new strip
 func NewLedStrip(width int) *LedStrip {
 
 	return &LedStrip{
@@ -27,13 +27,13 @@ func NewLedStrip(width int) *LedStrip {
 	}
 }
 
-// Adds a drawable to the field
-func (field *LedStrip) Add(addDrawable Drawable) {
+// Adds a drawable to the strip
+func (strip *LedStrip) Add(addDrawable Drawable) {
 
-	curElement := field.drawables.Front()
+	curElement := strip.drawables.Front()
 
 	if curElement == nil {
-		field.drawables.PushFront(addDrawable)
+		strip.drawables.PushFront(addDrawable)
 		return
 	}
 
@@ -42,21 +42,21 @@ func (field *LedStrip) Add(addDrawable Drawable) {
 		curDrawable := curElement.Value.(Drawable)
 
 		if addDrawable.ZIndex() <= curDrawable.ZIndex() {
-			field.drawables.InsertBefore(addDrawable, curElement)
+			strip.drawables.InsertBefore(addDrawable, curElement)
 			return
 		}
 	}
 
 	// got here so it wasn't less than any
-	field.drawables.PushBack(addDrawable)
+	strip.drawables.PushBack(addDrawable)
 }
 
 // Determines the color at the given position
-func (field *LedStrip) ColorAt(position float64) RGBA {
+func (strip *LedStrip) ColorAt(position float64) RGBA {
 
 	color := RGBA{0, 0, 0, 255}
 
-	for curElement := field.drawables.Front(); curElement != nil; curElement = curElement.Next() {
+	for curElement := strip.drawables.Front(); curElement != nil; curElement = curElement.Next() {
 
 		drawable := curElement.Value.(Drawable)
 
@@ -67,15 +67,15 @@ func (field *LedStrip) ColorAt(position float64) RGBA {
 }
 
 // Animate all Drawables
-func (field *LedStrip) Animate(dt float64) {
+func (strip *LedStrip) Animate(dt float64) {
 
-	for curElement := field.drawables.Front(); curElement != nil; {
+	for curElement := strip.drawables.Front(); curElement != nil; {
 
 		drawable := curElement.Value.(Drawable)
 
 		if !drawable.Animate(dt) {
 			nextElement := curElement.Next()
-			field.drawables.Remove(curElement)
+			strip.drawables.Remove(curElement)
 			curElement = nextElement
 		} else {
 			curElement = curElement.Next()
@@ -84,20 +84,20 @@ func (field *LedStrip) Animate(dt float64) {
 }
 
 // Render each integer position and pass that to the Display
-func (field *LedStrip) RenderTo(display Display) {
+func (strip *LedStrip) RenderTo(display Display) {
 
-	for ledIndex := 0; ledIndex < field.width; ledIndex++ {
-		field.renderBuffer[ledIndex] = field.ColorAt(float64(ledIndex))
+	for ledIndex := 0; ledIndex < strip.width; ledIndex++ {
+		strip.renderBuffer[ledIndex] = strip.ColorAt(float64(ledIndex))
 	}
-	display.Render(field.renderBuffer)
+	display.Render(strip.renderBuffer)
 }
 
-// Returns true if the field of drawables is valid
-func (field *LedStrip) IsValid() bool {
+// Returns true if the strip of drawables is valid
+func (strip *LedStrip) IsValid() bool {
 
 	var prevDrawable Drawable = nil
 
-	for curElement := field.drawables.Front(); curElement != nil; curElement = curElement.Next() {
+	for curElement := strip.drawables.Front(); curElement != nil; curElement = curElement.Next() {
 
 		curDrawable := curElement.Value.(Drawable)
 
@@ -113,12 +113,12 @@ func (field *LedStrip) IsValid() bool {
 	return true
 }
 
-// Return number of drawables in the field
-func (field *LedStrip) DrawableLen() int {
-	return field.drawables.Len()
+// Return number of drawables in the strip
+func (strip *LedStrip) DrawableLen() int {
+	return strip.drawables.Len()
 }
 
-// Width of the field
-func (field *LedStrip) Width() int {
-	return field.width
+// Width of the strip
+func (strip *LedStrip) Width() int {
+	return strip.width
 }

@@ -24,9 +24,10 @@ func (this *Gradient) ColorAt(position float64, baseColor RGBA) (color RGBA) {
 
 	color = this.color
 	color.A = uint8(255.0 * (this.maxPosition - position) / this.maxPosition)
-	//fmt.Println(this.maxPosition, position, color.A)
 
-	return color.BlendWith(baseColor)
+	result := color.BlendWith(baseColor)
+	//fmt.Println(result, color, baseColor)
+	return result
 }
 
 // ZIndex of the drawable

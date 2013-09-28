@@ -121,9 +121,13 @@ func (this *LedDisplay) Render(colorData []RGBA) {
 		color := colorData[colorIndex]
 		byteIndex := colorIndex*3 + 4
 
-		this.byteData[byteIndex+0] = gammaCorrectionLookup[color.G] | 0x80
-		this.byteData[byteIndex+1] = gammaCorrectionLookup[color.R] | 0x80
-		this.byteData[byteIndex+2] = gammaCorrectionLookup[color.B] | 0x80
+		//this.byteData[byteIndex+0] = gammaCorrectionLookup[color.G] | 0x80
+		//this.byteData[byteIndex+1] = gammaCorrectionLookup[color.R] | 0x80
+		//this.byteData[byteIndex+2] = gammaCorrectionLookup[color.B] | 0x80
+
+		this.byteData[byteIndex+0] = (color.G >> 1) | 0x80
+		this.byteData[byteIndex+1] = (color.R >> 1) | 0x80
+		this.byteData[byteIndex+2] = (color.B >> 1) | 0x80
 	}
 
 	this.bus.Write(this.byteData)
