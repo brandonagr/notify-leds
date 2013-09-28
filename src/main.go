@@ -41,8 +41,8 @@ func main() {
 	}
 
 	if runtime.GOOS == "windows" {
-		//go GenerateDrawablesTimer(newDrawables)
-		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
+		go GenerateDrawablesTimer(newDrawables)
+		//go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	} else {
 		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	}
@@ -50,6 +50,8 @@ func main() {
 	strip := NewLedStrip(Settings.LedCount)
 	curTime := time.Now()
 	prevTime := curTime
+
+	strip.Add(NewGradient(float64(Settings.LedCount), RGBA{255, 0, 0, 255}))
 
 	renderTick := time.Tick(time.Duration(Settings.MinFrameTime*1000.0) * time.Millisecond)
 	for _ = range renderTick {
