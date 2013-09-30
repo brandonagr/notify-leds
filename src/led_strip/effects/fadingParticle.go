@@ -3,6 +3,7 @@ package effects
 import (
 	. "led_strip"
 	"math"
+	"math/rand"
 )
 
 // Particle that will be drawn on the screen
@@ -39,6 +40,18 @@ func NewFadingParticle(position, velocity, size float64, color RGBA) Drawable {
 		size:     size,
 		zindex:   100,
 		lifeMax:  2,
+	}
+}
+
+// Return a random particle
+func NewFadingParticleRandom(maxPosition int, color RGBA) Drawable {
+	return &FadingParticle{
+		color:    color,
+		position: rand.Float64() * float64(maxPosition),
+		velocity: (rand.Float64() * 6.0) - 3.0,
+		size:     rand.Float64() + 1.0,
+		zindex:   100,
+		lifeMax:  rand.Float64()*1.5 + 1.5,
 	}
 }
 

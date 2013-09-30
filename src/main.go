@@ -9,6 +9,7 @@ import (
 	"log"
 	_ "log"
 	_ "math"
+	"math/rand"
 	"net"
 	"runtime"
 	"strings"
@@ -41,17 +42,21 @@ func main() {
 	}
 
 	if runtime.GOOS == "windows" {
-		go GenerateDrawablesTimer(newDrawables)
+		go GenerateDrawablesRandom(newDrawables, 300*time.Millisecond)
+		//go GenerateDrawablesTimer(newDrawables)
 		//go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	} else {
-		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
+		go GenerateDrawablesRandom(newDrawables, 300*time.Millisecond)
+		//go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	}
 
 	strip := NewLedStrip(Settings.LedCount)
 	curTime := time.Now()
 	prevTime := curTime
 
-	strip.Add(NewGradient(float64(Settings.LedCount), RGBA{255, 0, 0, 255}))
+	// used to test gamma mappings for led strip
+	//strip.Add(NewGradient(float64(Settings.LedCount), RGBA{255, 0, 0, 255}))
+	strip.Add(NewFlash(20, 20, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}}))
 
 	renderTick := time.Tick(time.Duration(Settings.MinFrameTime*1000.0) * time.Millisecond)
 	for _ = range renderTick {
@@ -71,7 +76,6 @@ func main() {
 
 // Test generate of drawables
 func GenerateDrawablesTimer(newDrawables chan<- Drawable) {
-
 	var count int = 0
 	for {
 		time.Sleep(500 * time.Millisecond)
@@ -82,6 +86,42 @@ func GenerateDrawablesTimer(newDrawables chan<- Drawable) {
 			newDrawables <- NewFlash(5, 0.5, 0.5, [2]RGBA{RGBA{255, 0, 0, 128}, RGBA{255, 255, 255, 255}})
 		}
 	}
+}
+
+// Test generate of drawables
+func GenerateDrawablesRandom(newDrawables chan<- Drawable, delay time.Duration) {
+	for _ = range time.Tick(delay) {
+
+		fakeLog := LogMessage{
+			ApplicationName: "test",
+			EntryDate:       "now",
+			Description:     "fake",
+		}
+
+		switch r := rand.Float64(); {
+		case r <= 0.01:
+			fakeLog.LogType = "fatal"
+			break
+		case r <= 0.025:
+			fakeLog.LogType = "error"
+			break
+		case r <= 0.15:
+			fakeLog.LogType = "warn"
+			break
+		case r <= 0.50:
+			fakeLog.LogType = "info"
+			break
+		case r <= 0.75:
+			fakeLog.LogType = "debug"
+			break
+		default:
+			fakeLog.LogType = "trace"
+			break
+		}
+
+		newDrawables <- CreateDrawableFromLog(fakeLog)
+	}
+
 }
 
 // Type that is received from a message
@@ -128,6 +168,7 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	for message := range r {
 		if message.Error != nil {
 			log.Fatalln(message.Error)
@@ -146,37 +187,28 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 
 // Convert LogMessage to Drawable
 func CreateDrawableFromLog(message LogMessage) Drawable {
-	logType := strings.ToLower(message.LogType)
-	particleColor := RGBA{}
-
-	switch logType {
+	switch strings.ToLower(message.LogType) {
 	case "trace":
-		particleColor = RGBA{128, 128, 128, 255}
+		return NewFadingParticleRandom(Settings.LedCount, RGBA{128, 128, 128, 255})
 		break
 	case "debug":
-		particleColor = RGBA{0, 0, 255, 255}
+		return NewFadingParticleRandom(Settings.LedCount, RGBA{0, 0, 255, 255})
 		break
 	case "info", "informational":
-		particleColor = RGBA{0, 255, 0, 255}
+		return NewFadingParticleRandom(Settings.LedCount, RGBA{0, 255, 0, 255})
 		break
 	case "warn":
-		particleColor = RGBA{255, 128, 0, 255}
+		return NewFadingParticleRandom(Settings.LedCount, RGBA{255, 128, 0, 255})
 		break
 	case "error":
-		return NewFlash(10, 0.25, 0.25, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
+		return NewFlash(10, 1, 0.05, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
 		break
 	case "fatal":
-		return NewFlash(20, 0.5, 0.5, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}})
+		return NewFlash(20, 4, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}})
 		break
 	default:
-		log.Fatalln("Unexpected logType of ", logType)
+		log.Fatalln("Unexpected logType of ", message.LogType)
 		break
 	}
-
-	// need to generate a random position
-	// random position in first 2/3 of strip
-	// velocity based on size of message
-	// size based on size of message
-	// color based on LogType
-	return NewFadingParticle(0, 32, 2, particleColor) //position, velocity, size float64)
+	panic("unreachable")
 }

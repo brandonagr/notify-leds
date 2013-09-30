@@ -20,6 +20,12 @@ type Flash struct {
 	// hz, ending at a lower rate
 	frequencyEnd float64
 
+	// the time at which the color will be changed next
+	changeColorAtTime float64
+
+	// Currently displayed color index, 0 or 1
+	colorIndex int
+
 	// Colors that are alternatied between
 	colors [2]RGBA
 }
@@ -27,26 +33,23 @@ type Flash struct {
 // Construct a Flash
 func NewFlash(lifeMax, frequencyBegin, frequencyEnd float64, colors [2]RGBA) Drawable {
 	return &Flash{
-		lifeMax:        lifeMax,
-		frequencyBegin: frequencyBegin,
-		frequencyEnd:   frequencyEnd,
-		colors:         colors,
+		lifeMax:           lifeMax,
+		frequencyBegin:    frequencyBegin,
+		frequencyEnd:      frequencyEnd,
+		colors:            colors,
+		changeColorAtTime: 1.0 / frequencyBegin,
 	}
+
 }
 
 // Returns the color at position blended on top of baseColor
 func (this *Flash) ColorAt(position float64, baseColor RGBA) (color RGBA) {
 
-	lifePercentage := (this.lifeMax - this.lifeSoFar) / this.lifeMax
-	frequency := (this.frequencyBegin-this.frequencyEnd)*lifePercentage + this.frequencyBegin
-
-	colorIndex := int(this.lifeSoFar/frequency) % 2
-	color = this.colors[colorIndex]
+	color = this.colors[this.colorIndex]
 	if color.A > 0 {
-		color.A = uint8(lifePercentage * 255.0)
+		lifeRemainingPercentage := (this.lifeMax - this.lifeSoFar) / this.lifeMax
+		color.A = uint8(lifeRemainingPercentage * 255.0)
 	}
-
-	//fmt.Println(lifePercentage, frequency, colorIndex, color.A)
 
 	return color.BlendWith(baseColor)
 }
@@ -59,6 +62,17 @@ func (this *Flash) ZIndex() ZIndex {
 // Animate forward in time
 func (this *Flash) Animate(dt float64) bool {
 	this.lifeSoFar += dt
+
+	for this.lifeSoFar > this.changeColorAtTime {
+
+		percentage := this.changeColorAtTime / this.lifeMax
+		frequency := (this.frequencyEnd-this.frequencyBegin)*percentage + this.frequencyBegin
+
+		this.changeColorAtTime = this.changeColorAtTime + 1.0/frequency
+		this.colorIndex = (this.colorIndex + 1) % 2
+
+		//fmt.Println(percentage, frequency, this.lifeSoFar, this.colorIndex, this.changeColorAtTime)
+	}
 
 	return this.lifeSoFar < this.lifeMax
 }
