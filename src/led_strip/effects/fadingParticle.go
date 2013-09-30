@@ -47,8 +47,8 @@ func NewFadingParticle(position, velocity, size float64, color RGBA) Drawable {
 func NewFadingParticleRandom(maxPosition int, color RGBA) Drawable {
 	return &FadingParticle{
 		color:    color,
-		position: rand.Float64() * float64(maxPosition),
-		velocity: (rand.Float64() * 6.0) - 3.0,
+		position: float64(rand.Intn(maxPosition)),
+		velocity: 0.0,//(rand.Float64() * 6.0) - 3.0,
 		size:     rand.Float64() + 1.0,
 		zindex:   100,
 		lifeMax:  rand.Float64()*1.5 + 1.5,
@@ -71,7 +71,7 @@ func (this *FadingParticle) ColorAt(position float64, baseColor RGBA) (color RGB
 			maxAlpha = (1.0 - lifePercentage) * 2.0 * 255.0
 		}
 
-		fadedColor.A = uint8((this.size - distance) * maxAlpha)
+		fadedColor.A = uint8(((this.size - distance)/this.size) * maxAlpha)
 		color = fadedColor.BlendWith(baseColor)
 	} else {
 		color = baseColor

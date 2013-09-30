@@ -56,7 +56,7 @@ func main() {
 
 	// used to test gamma mappings for led strip
 	//strip.Add(NewGradient(float64(Settings.LedCount), RGBA{255, 0, 0, 255}))
-	strip.Add(NewFlash(20, 20, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}}))
+	//strip.Add(NewFlash(20, 20, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}}))
 
 	renderTick := time.Tick(time.Duration(Settings.MinFrameTime*1000.0) * time.Millisecond)
 	for _ = range renderTick {
@@ -99,10 +99,10 @@ func GenerateDrawablesRandom(newDrawables chan<- Drawable, delay time.Duration) 
 		}
 
 		switch r := rand.Float64(); {
-		case r <= 0.01:
+		case r <= 0.001:
 			fakeLog.LogType = "fatal"
 			break
-		case r <= 0.025:
+		case r <= 0.0055:
 			fakeLog.LogType = "error"
 			break
 		case r <= 0.15:
@@ -201,10 +201,10 @@ func CreateDrawableFromLog(message LogMessage) Drawable {
 		return NewFadingParticleRandom(Settings.LedCount, RGBA{255, 128, 0, 255})
 		break
 	case "error":
-		return NewFlash(10, 1, 0.05, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
+		return NewFlash(10, 3, 0.05, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
 		break
 	case "fatal":
-		return NewFlash(20, 4, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}})
+		return NewFlash(20, 8, 0.01, [2]RGBA{RGBA{255, 255, 255, 255}, RGBA{255, 0, 255, 255}})
 		break
 	default:
 		log.Fatalln("Unexpected logType of ", message.LogType)
