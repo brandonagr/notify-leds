@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"hash/fnv"
 	"flag"
 	"github.com/gmallard/stompngo"
 	. "led_strip"
@@ -14,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"io"
 )
 
 // Command line flags
@@ -42,12 +44,12 @@ func main() {
 	}
 
 	if runtime.GOOS == "windows" {
-		go GenerateDrawablesRandom(newDrawables, 300*time.Millisecond)
+		//go GenerateDrawablesRandom(newDrawables, 300*time.Millisecond)
 		//go GenerateDrawablesTimer(newDrawables)
-		//go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
+		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	} else {
-		go GenerateDrawablesRandom(newDrawables, 300*time.Millisecond)
-		//go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
+		//go GenerateDrawablesRandom(newDrawables, 100*time.Millisecond)
+		go GenerateDrawablesLogs(*brokerHost, *brokerPort, newDrawables)
 	}
 
 	strip := NewLedStrip(Settings.LedCount)
@@ -163,7 +165,7 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 	log.Println("Stomp connect complete ...", connection.Protocol())
 
 	u := stompngo.Uuid()
-	s := stompngo.Headers{"destination", "/topic/*", "id", u}
+	s := stompngo.Headers{"destination", "/topic/VirtualTopic.LogMillMessages.*", "id", u}
 	r, err := connection.Subscribe(s)
 	if err != nil {
 		log.Fatalln(err)
@@ -175,6 +177,7 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 		}
 
 		log.Println("Received message", strings.Join(message.Message.Headers, ","))
+		//log.Println(message.Message.BodyString())
 
 		logMessage := LogMessage{}
 		if err = xml.Unmarshal(message.Message.Body, &logMessage); err != nil {
@@ -187,18 +190,23 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 
 // Convert LogMessage to Drawable
 func CreateDrawableFromLog(message LogMessage) Drawable {
+	h := fnv.New32()
+	io.WriteString(h, message.ApplicationName)
+	hashValue := h.Sum32()
+	appColor := RGBA{ uint8((hashValue >> 16) & 0xff), uint8((hashValue >> 8) & 0xff), uint8(hashValue & 0xff), 255}
+
 	switch strings.ToLower(message.LogType) {
 	case "trace":
-		return NewFadingParticleRandom(Settings.LedCount, RGBA{128, 128, 128, 255})
+		return NewFadingParticleRandom(Settings.LedCount, appColor)
 		break
 	case "debug":
-		return NewFadingParticleRandom(Settings.LedCount, RGBA{0, 0, 255, 255})
+		return NewFadingParticleRandom(Settings.LedCount, appColor)
 		break
 	case "info", "informational":
-		return NewFadingParticleRandom(Settings.LedCount, RGBA{0, 255, 0, 255})
+		return NewFadingParticleRandom(Settings.LedCount, appColor)
 		break
 	case "warn":
-		return NewFadingParticleRandom(Settings.LedCount, RGBA{255, 128, 0, 255})
+		return NewFadingParticleRandom(Settings.LedCount, appColor)
 		break
 	case "error":
 		return NewFlash(10, 3, 0.05, [2]RGBA{RGBA{255, 0, 0, 255}, RGBA{0, 0, 255, 128}})
