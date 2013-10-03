@@ -176,7 +176,7 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 			log.Fatalln(message.Error)
 		}
 
-		log.Println("Received message", strings.Join(message.Message.Headers, ","))
+		//log.Println("Received message", strings.Join(message.Message.Headers, ","))
 		//log.Println(message.Message.BodyString())
 
 		logMessage := LogMessage{}

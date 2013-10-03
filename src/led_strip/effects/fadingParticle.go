@@ -51,7 +51,7 @@ func NewFadingParticleRandom(maxPosition int, color RGBA) Drawable {
 		velocity: 0.0,//(rand.Float64() * 6.0) - 3.0,
 		size:     rand.Float64() + 1.0,
 		zindex:   100,
-		lifeMax:  rand.Float64()*0.5 + 0.5,
+		lifeMax:  rand.Float64()*1.5 + 1.0,
 	}
 }
 
