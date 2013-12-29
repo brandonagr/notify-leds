@@ -183,7 +183,9 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 		if err = xml.Unmarshal(message.Message.Body, &logMessage); err != nil {
 			log.Printf("Failed to unmarshal", err, message.Message.Body)
 		} else {
-			newDrawables <- CreateDrawableFromLog(logMessage)
+			if logMessage.ApplicationName != "ISOProxy" && logMessage.ApplicationName != "PjmeDataFeed" {
+				newDrawables <- CreateDrawableFromLog(logMessage)
+			}
 		}
 	}
 }
