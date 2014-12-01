@@ -183,11 +183,20 @@ func GenerateDrawablesLogs(host, port string, newDrawables chan<- Drawable) {
 		if err = xml.Unmarshal(message.Message.Body, &logMessage); err != nil {
 			log.Printf("Failed to unmarshal", err, message.Message.Body)
 		} else {
-			if logMessage.ApplicationName != "ISOProxy" && logMessage.ApplicationName != "PjmeDataFeed" {
+			if logMessage.ApplicationName != "" && !blackListedApplication[logMessage.ApplicationName] {
 				newDrawables <- CreateDrawableFromLog(logMessage)
 			}
 		}
 	}
+}
+
+var blackListedApplication = map[string]bool{
+	"ISOProxy": true,
+	"PjmeDataFeed": true,
+	"IRIS": true,
+	"ErcotDispatcher": true,
+	"ISOProxyFileArchiver": true,
+	"UnderDog": true,
 }
 
 // Convert LogMessage to Drawable
