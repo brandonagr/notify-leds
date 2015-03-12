@@ -1,0 +1,1 @@
+Uses raspberry pi to drive an RGB led strip to depict system status
